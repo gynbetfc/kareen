@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔮 Kareen - Acompanhante VIP</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a0011, #2d0a1e, #1a0011);
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding: 16px;
+        }
+        
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .profile-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .profile-name {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ff6b9d;
+            text-shadow: 0 0 30px rgba(255, 107, 157, 0.3);
+        }
+        
+        .profile-city {
+            color: #aaa;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        
+        .profile-desc {
+            color: #ddd;
+            font-size: 14px;
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+        
+        .photo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 16px 0;
+        }
+        
+        .photo-grid img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            border-radius: 16px;
+            border: 2px solid rgba(255, 107, 157, 0.2);
+            transition: transform 0.3s;
+        }
+        
+        .photo-grid img:hover {
+            transform: scale(1.02);
+        }
+        
+        .servicos {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 14px;
+            margin: 14px 0;
+        }
+        
+        .servicos h3 {
+            color: #ff6b9d;
+            font-size: 15px;
+            margin-bottom: 8px;
+        }
+        
+        .servicos ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        
+        .servicos ul li {
+            background: rgba(255, 107, 157, 0.15);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #ffb3cc;
+        }
+        
+        .preco-box {
+            background: linear-gradient(135deg, rgba(255, 107, 157, 0.15), rgba(255, 107, 157, 0.05));
+            border: 2px solid #ff6b9d;
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+            margin: 14px 0;
+        }
+        
+        .preco-box .valor {
+            font-size: 30px;
+            font-weight: bold;
+            color: #ff6b9d;
+        }
+        
+        .preco-box .label {
+            color: #aaa;
+            font-size: 13px;
+        }
+        
+        .preco-box .moedas {
+            color: #ffd700;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        
+        .btn-pagar {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #ff6b9d, #ff2d78);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+        }
+        
+        .btn-pagar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(255, 107, 157, 0.4);
+        }
+        
+        .btn-pagar:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-pagar.pago {
+            background: linear-gradient(135deg, #00c853, #00e676);
+        }
+        
+        .input-group {
+            margin: 10px 0;
+        }
+        
+        .input-group label {
+            color: #aaa;
+            font-size: 13px;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 15px;
+            font-family: inherit;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #ff6b9d;
+        }
+        
+        .pix-area {
+            display: none;
+            text-align: center;
+            padding: 16px 0;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .pix-area.show {
+            display: block;
+        }
+        
+        .pix-qrcode {
+            background: #fff;
+            padding: 16px;
+            border-radius: 16px;
+            display: inline-block;
+            margin: 10px 0;
+        }
+        
+        .pix-qrcode img {
+            max-width: 200px;
+            display: block;
+        }
+        
+        .pix-copiavel {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            word-break: break-all;
+            cursor: pointer;
+            color: #ffd700;
+            margin: 8px 0;
+            border: 1px dashed rgba(255, 215, 0, 0.3);
+        }
+        
+        .pix-copiavel:hover {
+            background: rgba(255, 215, 0, 0.1);
+        }
+        
+        .btn-verificar {
+            padding: 10px 24px;
+            background: #ffd700;
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: inherit;
+            margin-top: 8px;
+        }
+        
+        .btn-verificar:hover {
+            transform: scale(1.02);
+        }
+        
+        .contatos-liberados {
+            display: none;
+            animation: fadeIn 0.5s ease;
+            margin-top: 16px;
+        }
+        
+        .contatos-liberados.show {
+            display: block;
+        }
+        
+        .contato-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+            text-decoration: none;
+            text-align: center;
+            margin: 8px 0;
+            transition: all 0.3s;
+        }
+        
+        .contato-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-whatsapp {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: #fff;
+        }
+        
+        .btn-telegram-grupo {
+            background: linear-gradient(135deg, #1DA1F2, #0d8bd9);
+            color: #fff;
+        }
+        
+        .btn-telegram {
+            background: linear-gradient(135deg, #0088cc, #006699);
+            color: #fff;
+        }
+        
+        .sucesso-text {
+            color: #00e676;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        
+        .toast-container {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 999;
+            max-width: 320px;
+        }
+        
+        .toast {
+            background: rgba(0, 0, 0, 0.95);
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin-bottom: 6px;
+            border-left: 4px solid;
+            animation: slideIn 0.4s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .toast-success { border-left-color: #00e676; }
+        .toast-error { border-left-color: #ff1744; }
+        .toast-info { border-left-color: #2979ff; }
+        
+        .toast-icon { font-size: 18px; }
+        .toast-msg { font-size: 13px; color: #ddd; }
+        
+        @keyframes slideIn {
+            from { transform: translateX(120%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s ease infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 420px) {
+            .container { padding: 14px; }
+            .profile-name { font-size: 22px; }
+            .photo-grid img { height: 150px; }
+            .preco-box .valor { font-size: 26px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="container">
+    
+    <!-- PERFIL -->
+    <div class="profile-header">
+        <h1 class="profile-name">💋 Kareen</h1>
+        <p class="profile-city">📍 São Paulo - SP</p>
+        <p class="profile-desc">💋 Acompanhante VIP - Atendimento discreto e de alto nível. 🌹</p>
+    </div>
+
+    <!-- FOTOS -->
+    <div class="photo-grid">
+        <img src="https://via.placeholder.com/300x400/ff69b4/fff?text=Foto+1" alt="Foto 1">
+        <img src="https://via.placeholder.com/300x400/ff69b4/fff?text=Foto+2" alt="Foto 2">
+    </div>
+
+    <!-- SERVIÇOS -->
+    <div class="servicos">
+        <h3>✨ Serviços</h3>
+        <ul>
+            <li>💆 Massagem Relaxante</li>
+            <li>🔥 Massagem Tântrica</li>
+            <li>🌹 Acompanhante para Eventos</li>
+            <li>💋 Programa Completo</li>
+        </ul>
+    </div>
+
+    <!-- PREÇO -->
+    <div class="preco-box">
+        <div class="label">💳 Acesso a todos os contatos</div>
+        <div class="valor">R$ 5.00</div>
+        <div class="moedas">⚡ Ganhe 10 moedas de bônus!</div>
+    </div>
+
+    <!-- EMAIL -->
+    <div class="input-group">
+        <label>📧 Seu email para receber o acesso</label>
+        <input type="email" id="emailInput" placeholder="seu@email.com">
+    </div>
+
+    <!-- BOTÃO PAGAR -->
+    <button class="btn-pagar" id="btnPagar" onclick="iniciarPagamento()">
+        🔓 LIBERAR CONTATOS
+    </button>
+
+    <!-- ÁREA PIX -->
+    <div class="pix-area" id="pixArea">
+        <div id="pixContent"></div>
+    </div>
+
+    <!-- CONTATOS LIBERADOS -->
+    <div class="contatos-liberados" id="contatosLiberados">
+        <p class="sucesso-text">✅ PAGAMENTO CONFIRMADO!</p>
+        <p style="text-align:center;color:#aaa;font-size:13px;margin-bottom:12px;">
+            Clique no botão para falar com Kareen
+        </p>
+        
+        <a href="https://wa.me/5511999999999" target="_blank" class="contato-btn btn-whatsapp">
+            💬 WhatsApp
+        </a>
+        
+        <a href="https://t.me/+XXXXXXXXXX" target="_blank" class="contato-btn btn-telegram-grupo">
+            👥 Grupo do Telegram
+        </a>
+        
+        <a href="https://t.me/kareen_vip" target="_blank" class="contato-btn btn-telegram">
+            📩 Telegram @kareen_vip
+        </a>
+        
+        <p style="text-align:center;color:#666;font-size:10px;margin-top:10px;">
+            📋 Guarde este acesso, você já pagou!
+        </p>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// 🔥 CONFIGURAÇÃO
+// ============================================================
+const CONFIG = {
+    nome: 'Kareen',
+    preco: 5.0,
+    moedas_bonus: 10,
+    telefone: '5511999999999',
+    telegram_grupo: 'https://t.me/+XXXXXXXXXX',
+    telegram_usuario: '@kareen_vip'
+};
+
+// ============================================================
+// 🚀 LÓGICA PRINCIPAL
+// ============================================================
+
+let paymentId = null;
+let verificando = false;
+let isPaid = false;
+
+// Verifica se já pagou
+if (localStorage.getItem('kareen_pago') === 'true') {
+    liberarContatos();
+    showToast('🔓 Acesso já liberado!', 'info');
+}
+
+function showToast(msg, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
+        <span class="toast-msg">${msg}</span>
+    `;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(120%)';
+        setTimeout(() => toast.remove(), 500);
+    }, 4000);
+}
+
+function copiarPix(texto) {
+    navigator.clipboard.writeText(texto).then(() => {
+        showToast('📋 Código PIX copiado!', 'success');
+    }).catch(() => {
+        const input = document.createElement('input');
+        input.value = texto;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        input.remove();
+        showToast('📋 Código copiado!', 'success');
+    });
+}
+
+function liberarContatos() {
+    if (isPaid) return;
+    isPaid = true;
+    
+    const btn = document.getElementById('btnPagar');
+    btn.classList.add('pago');
+    btn.innerHTML = '✅ PAGO - ACESSO LIBERADO';
+    btn.disabled = true;
+    
+    document.getElementById('pixArea').classList.remove('show');
+    document.getElementById('contatosLiberados').classList.add('show');
+    
+    localStorage.setItem('kareen_pago', 'true');
+    
+    showToast('✅ Acesso liberado!', 'success');
+}
+
+async function criarPagamentoPIX(email) {
+    // 🔧 MODO SIMULAÇÃO (para teste)
+    // Troque para false quando tiver backend
+    const MODO_SIMULACAO = true;
+    
+    if (MODO_SIMULACAO) {
+        const id = 'sim_' + Date.now();
+        paymentId = id;
+        return {
+            id: id,
+            point_of_interaction: {
+                transaction_data: {
+                    qr_code: '00020126360014BR.GOV.BCB.PIX0136teste@email.com52040000530398654045.005802BR5909Tesla3696009Sao Paulo62070503***6304E3F9',
+                    qr_code_base64: null
+                }
+            }
+        };
+    }
+    
+    // MODO REAL (com backend)
+    try {
+        const response = await fetch('/criar_pix', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: email,
+                preco: CONFIG.preco
+            })
+        });
+        const data = await response.json();
+        if (data.id) {
+            paymentId = data.id.toString();
+            return data;
+        }
+        throw new Error(data.message || 'Erro ao criar PIX');
+    } catch (error) {
+        throw new Error(error.message || 'Erro ao criar PIX');
+    }
+}
+
+async function verificarPagamentoPIX() {
+    // MODO SIMULAÇÃO
+    if (paymentId && paymentId.startsWith('sim_')) {
+        const criadoEm = parseInt(paymentId.split('_')[1]) || Date.now();
+        if (Date.now() - criadoEm > 30000) {
+            return { status: 'approved' };
+        }
+        return { status: 'pending' };
+    }
+    
+    // MODO REAL
+    try {
+        const response = await fetch(`/verificar_pix/${paymentId}`);
+        return await response.json();
+    } catch (error) {
+        return { status: 'pending' };
+    }
+}
+
+function mostrarPix(data) {
+    const area = document.getElementById('pixArea');
+    const content = document.getElementById('pixContent');
+    
+    let html = `
+        <p style="color:#ffd700;font-size:18px;font-weight:bold;">💰 R$ ${CONFIG.preco.toFixed(2)}</p>
+        <p style="color:#aaa;font-size:13px;">⚡ Ganhe ${CONFIG.moedas_bonus} moedas de bônus!</p>
+        <p style="color:#888;font-size:12px;margin:6px 0;">⬇️ Escaneie o QR Code ou copie o código</p>
+    `;
+    
+    if (data.point_of_interaction?.transaction_data?.qr_code_base64) {
+        html += `
+            <div class="pix-qrcode">
+                <img src="data:image/png;base64,${data.point_of_interaction.transaction_data.qr_code_base64}">
+            </div>
+        `;
+    }
+    
+    const qrCode = data.point_of_interaction?.transaction_data?.qr_code;
+    if (qrCode) {
+        html += `
+            <div class="pix-copiavel" onclick="copiarPix('${qrCode}')">
+                📋 Clique para copiar o código PIX
+            </div>
+        `;
+    }
+    
+    html += `
+        <button class="btn-verificar" id="btnVerificar" onclick="verificarPagamento()">
+            🔄 JÁ PAGUEI - VERIFICAR
+        </button>
+        <p style="color:#666;font-size:10px;margin-top:8px;">
+            ⏳ O pagamento pode levar alguns minutos para ser confirmado
+        </p>
+    `;
+    
+    content.innerHTML = html;
+    area.classList.add('show');
+}
+
+async function iniciarPagamento() {
+    const email = document.getElementById('emailInput').value.trim();
+    if (!email) {
+        showToast('Digite seu email!', 'error');
+        return;
+    }
+    
+    const btn = document.getElementById('btnPagar');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Gerando PIX...';
+    
+    try {
+        const data = await criarPagamentoPIX(email);
+        mostrarPix(data);
+        showToast('✅ PIX gerado! Faça o pagamento.', 'success');
+        btn.innerHTML = '⏳ AGUARDANDO PAGAMENTO';
+    } catch (error) {
+        showToast('❌ ' + error.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '🔓 LIBERAR CONTATOS';
+    }
+}
+
+async function verificarPagamento() {
+    if (verificando || isPaid) return;
+    verificando = true;
+    
+    const btn = document.getElementById('btnVerificar');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Verificando...';
+    }
+    
+    try {
+        const data = await verificarPagamentoPIX();
+        
+        if (data.status === 'approved') {
+            liberarContatos();
+            showToast('✅ PAGAMENTO CONFIRMADO!', 'success');
+        } else if (data.status === 'pending') {
+            showToast('⏳ Pagamento ainda não confirmado. Aguarde...', 'info');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '🔄 JÁ PAGUEI - VERIFICAR';
+            }
+        } else {
+            showToast('❌ Pagamento não encontrado. Tente novamente.', 'error');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '🔄 JÁ PAGUEI - VERIFICAR';
+            }
+        }
+    } catch (error) {
+        showToast('❌ Erro ao verificar', 'error');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '🔄 JÁ PAGUEI - VERIFICAR';
+        }
+    }
+    
+    verificando = false;
+}
+
+// ============================================================
+// 🔄 VERIFICAÇÃO AUTOMÁTICA (a cada 10 segundos)
+// ============================================================
+
+setInterval(async () => {
+    if (paymentId && !isPaid && !document.getElementById('contatosLiberados').classList.contains('show')) {
+        try {
+            const data = await verificarPagamentoPIX();
+            if (data.status === 'approved') {
+                liberarContatos();
+                showToast('✅ Pagamento confirmado!', 'success');
+            }
+        } catch (e) {
+            // Silencia
+        }
+    }
+}, 10000);
+
+console.log('🔮 Site da Kareen carregado!');
+console.log('💰 Preço: R$', CONFIG.preco);
+</script>
+
+</body>
+</html>
