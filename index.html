@@ -427,15 +427,15 @@ function carregarLojas(){
   if (!CONFIGURADO){
     document.getElementById('listaLojas').innerHTML = '';
     document.getElementById('estadoLojas').innerHTML = `
-      <div class="setup">
-        <h3>⚙️ Falta conectar o Firebase</h3>
-        <p>Para o site listar as lojas, cole o <code>firebaseConfig</code> do seu projeto no topo do script. Depois é só publicar. Enquanto isso, esta é uma prévia do visual.</p>
+      <div class="state">
+        <div class="big">⚠️</div>
+        <h3>Conexão indisponível</h3>
+        <p>Não foi possível conectar ao servidor das lojas. Tente novamente em instantes.</p>
       </div>`;
-    renderLojas(LOJAS_DEMO); // mostra demo pra ver o visual
     return;
   }
   mostrarSkeletons();
-  // Lê todas as lojas e filtra as disponíveis
+  // Lê todas as lojas e filtra as que estão disponíveis (abertas + empresarial + caixa aberto + online)
   db.ref('pdv/usuarios').on('value', (snap)=>{
     const dados = snap.val() || {};
     const lojas = [];
@@ -464,6 +464,10 @@ function carregarLojas(){
     });
     LOJAS = lojas;
     renderLojas(lojas);
+  }, (err)=>{
+    document.getElementById('estadoLojas').innerHTML = `
+      <div class="state"><div class="big">🔌</div><h3>Sem conexão</h3>
+      <p>Não foi possível carregar as lojas agora.</p></div>`;
   });
 }
 
@@ -514,10 +518,10 @@ function renderLojas(lojas){
   }).join('');
 }
 
-function filtrarLojas(){ renderLojas(LOJAS.length?LOJAS:LOJAS_DEMO); }
+function filtrarLojas(){ renderLojas(LOJAS); }
 
 function abrirLoja(key){
-  const loja = (LOJAS.length?LOJAS:LOJAS_DEMO).find(l=>l.key===key);
+  const loja = LOJAS.find(l=>l.key===key);
   if(!loja) return;
   lojaAtual = loja;
   catAtiva = 'Todos';
@@ -845,15 +849,15 @@ async function confirmarPedido(){
   };
 
   if(!CONFIGURADO){
-    toast('Modo demo: pedido simulado ✅');
-    fecharCheckout(); abrirAcompanhamento(pedidoId, pedido, true); return;
+    toast('Sem conexão com o servidor. Tente novamente.');
+    return;
   }
   try{
     document.getElementById('btnConfirmar').disabled=true;
     await db.ref(`pdv/usuarios/${lojaAtual.key}/pedidos_online/${pedidoId}`).set(pedido);
     pedidoAtivoId = pedidoId;
     fecharCheckout();
-    abrirAcompanhamento(pedidoId, pedido, false);
+    abrirAcompanhamento(pedidoId, pedido);
     escutarPedido(pedidoId);
   }catch(e){
     toast('Erro ao enviar pedido. Tente de novo.');
@@ -875,9 +879,9 @@ function fecharPedido(){
   carrinho.length=0; atualizarBarraCarrinho();
 }
 
-function abrirAcompanhamento(id, pedido, demo){
+function abrirAcompanhamento(id, pedido){
   document.getElementById('modalPedido').classList.remove('hidden');
-  renderAcompanhamento(pedido, demo);
+  renderAcompanhamento(pedido);
 }
 
 function escutarPedido(id){
@@ -889,7 +893,7 @@ function escutarPedido(id){
   });
 }
 
-function renderAcompanhamento(p, demo){
+function renderAcompanhamento(p){
   const body = document.getElementById('pedBody');
   const title = document.getElementById('pedHeadTitle');
   let html = '';
@@ -914,10 +918,6 @@ function renderAcompanhamento(p, demo){
         <div class="pix-wait"><span class="pix-spin"></span> Gerando seu PIX...</div>
         <p style="font-size:13px;color:var(--text-mut)">A loja está gerando o código de pagamento. Aguarde alguns segundos.</p>
       </div>`;
-      if(demo){
-        html = `<div class="pix-box"><div class="pix-wait">Modo demo</div>
-          <p style="font-size:13px;color:var(--text-dim)">No app real, aqui apareceria o QR code do PIX gerado pelo PDV da loja.</p></div>`;
-      }
     }
   } else {
     // Acompanhamento de status
@@ -977,7 +977,7 @@ function copiarPix(){
 function abrirChatCliente(){
   const msg = prompt('💬 Mensagem para a loja:');
   if(!msg||!msg.trim()) return;
-  if(!CONFIGURADO){ toast('Modo demo: mensagem simulada'); return; }
+  if(!CONFIGURADO){ toast('Sem conexão'); return; }
   db.ref(`pdv/usuarios/${lojaAtual.key}/chat_cliente/${pedidoAtivoId}`).push({
     autor:'cliente', mensagem:msg.trim(), criado_em:new Date().toISOString()
   }).then(()=>toast('Mensagem enviada ✅')).catch(()=>toast('Erro ao enviar'));
@@ -995,27 +995,6 @@ function irPara(tela){
   if(tela==='pedido'){ if(carrinho.length) abrirCarrinho(); else toast('Seu carrinho está vazio'); }
   if(tela==='lojas'){ voltarParaLojas(); }
 }
-
-/* ============================================================
-   DADOS DEMO (só aparecem antes de configurar o Firebase,
-   pra você visualizar o layout)
-   ============================================================ */
-const LOJAS_DEMO = [
-  {key:'demo1',nome:'Empório Barbosa',tempo:25,entrega:true,retirada:true,mesa:false,
-   pix:true,pag_entrega:true,valor_km:2,frete_minimo:5,raio_max_km:10,coord:null,
-   produtos:{
-     p1:{nome:'X-Burger Artesanal',preco:22.90,categoria:'Lanches',estoque:10},
-     p2:{nome:'X-Salada Completo',preco:25.90,categoria:'Lanches',estoque:8},
-     p3:{nome:'Batata Frita Grande',preco:14.00,categoria:'Porções',estoque:15},
-     p4:{nome:'Coca-Cola Lata',preco:6.00,categoria:'Bebidas',estoque:30},
-     p5:{nome:'Suco Natural Laranja',preco:9.00,categoria:'Bebidas',estoque:12}
-   },
-   kits:{k1:{nome:'Combo Casal',preco:49.90,ativo:true,itens:[{nome:'2 X-Burger',preco_original:45.80},{nome:'Batata',preco_original:14},{nome:'2 Refri',preco_original:12}]}}},
-  {key:'demo2',nome:'Burguer da Praça',tempo:40,entrega:true,retirada:false,mesa:true,
-   produtos:{a:{nome:'Smash Duplo',preco:28,categoria:'Lanches',estoque:5},b:{nome:'Onion Rings',preco:16,categoria:'Porções',estoque:6}},kits:{}},
-  {key:'demo3',nome:'Pizzaria Forno & Lenha',tempo:50,entrega:true,retirada:true,mesa:true,
-   produtos:{a:{nome:'Pizza Margherita',preco:42,categoria:'Pizzas',estoque:10}},kits:{}}
-];
 
 /* ============================================================
    INÍCIO
