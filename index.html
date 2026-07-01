@@ -807,31 +807,45 @@ function montarEnderecoCompleto(){
 async function buscarCep(cep){
   const limpo=(cep||'').replace(/\D/g,'');
   if(limpo.length!==8) return;
+  const info = document.getElementById('coFreteInfo');
   try{
     const r=await fetch(`https://viacep.com.br/ws/${limpo}/json/`);
     const d=await r.json();
     if(d && !d.erro){
-      if(d.logradouro && !document.getElementById('coRua').value) document.getElementById('coRua').value=d.logradouro;
-      if(d.bairro && !document.getElementById('coBairro').value) document.getElementById('coBairro').value=d.bairro;
+      if(d.logradouro) document.getElementById('coRua').value=d.logradouro;
+      if(d.bairro) document.getElementById('coBairro').value=d.bairro;
       if(d.localidade) document.getElementById('coCidade').value=d.localidade + (d.uf?'/'+d.uf:'');
       freteSujo=true;
+      // Calcula o frete AUTOMATICAMENTE a partir do CEP (endereço preciso)
+      if(tipoEntrega==='entrega') calcularFrete();
+    } else {
+      if(info){ info.className='co-frete-info erro';info.classList.remove('hidden');info.textContent='CEP não encontrado. Confira o número.'; }
     }
   }catch(e){}
 }
 
 async function calcularFrete(){
-  const end = montarEndereco();
   const info = document.getElementById('coFreteInfo');
-  if(end.length<6){ info.className='co-frete-info erro';info.classList.remove('hidden');info.textContent='Preencha ao menos rua, número e cidade.';return; }
-  if(!lojaAtual.coord){ info.className='co-frete-info erro';info.classList.remove('hidden');info.textContent='A loja ainda não configurou a localização. Escolha retirada ou fale com a loja.';return; }
+  // Monta o endereço priorizando CEP + rua + cidade (mais preciso para o mapa)
+  const cep=(document.getElementById('coCep').value||'').replace(/\D/g,'');
+  const rua=(document.getElementById('coRua').value||'').trim();
+  const cidade=(document.getElementById('coCidade').value||'').trim();
+  const numero=(document.getElementById('coNumero').value||'').trim();
+  // texto de busca: usa CEP (mais preciso) e complementa com rua/cidade
+  let textoBusca = '';
+  if(cep && cep.length===8) textoBusca = `${rua?rua+', ':''}${numero?numero+', ':''}${cidade}, ${cep}, Brasil`;
+  else textoBusca = montarEndereco()+', Brasil';
+
+  if(!cep && rua.length<3){ info.className='co-frete-info erro';info.classList.remove('hidden');info.textContent='Preencha o CEP para calcular o frete.';return; }
+  if(!lojaAtual.coord){ info.className='co-frete-info erro';info.classList.remove('hidden');info.textContent='A loja ainda não configurou a localização. Escolha retirada.';return; }
   info.className='co-frete-info';info.classList.remove('hidden');info.innerHTML='<span class="pix-spin" style="display:inline-block"></span> Calculando frete...';
 
   try{
-    const geo = await geocodeCliente(end);
-    if(!geo){ info.className='co-frete-info erro';info.textContent='Não consegui localizar seu endereço. Confira o CEP e o número.';return; }
+    const geo = await geocodeCliente(textoBusca);
+    if(!geo){ info.className='co-frete-info erro';info.textContent='Não consegui localizar o CEP. Confira se está correto.';return; }
     coordCliente = geo;
     const km = await distanciaRua(lojaAtual.coord, geo);
-    if(km===null){ info.className='co-frete-info erro';info.textContent='Não consegui calcular a rota. Verifique o endereço.';return; }
+    if(km===null){ info.className='co-frete-info erro';info.textContent='Não consegui calcular a rota. Tente novamente.';return; }
     if(km > lojaAtual.raio_max_km){
       info.className='co-frete-info erro';
       info.textContent=`Você está a ${km.toFixed(1)} km — fora da área de entrega (máx ${lojaAtual.raio_max_km} km). Tente retirada.`;
@@ -848,9 +862,8 @@ async function calcularFrete(){
   }
 }
 
-// Geocoding e rota usam a API pública da OpenRouteService.
-// (mesma usada pelo PDV; aqui o site só consulta para mostrar o frete — o PDV recalcula ao receber)
-const ORS_KEY_SITE = ""; // opcional: cole a mesma chave ORS aqui para o site pré-calcular o frete
+// Geocoding e rota usam a API pública da OpenRouteService (mesma chave do PDV).
+const ORS_KEY_SITE = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjRjOTIzMTNkZDI4YjRmYjRhMzNmMzY0YjkxYTY1NGM1IiwiaCI6Im11cm11cjY0In0=";
 async function geocodeCliente(endereco){
   if(!ORS_KEY_SITE) return null;
   try{
