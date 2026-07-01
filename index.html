@@ -1125,13 +1125,19 @@ function renderChat(){
   cont.scrollTop=cont.scrollHeight;
 }
 
+function tsLocal(){
+  const d=new Date();
+  const p=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
 function enviarChatCli(){
   const input=document.getElementById('chatInputCli');
   const msg=input.value.trim();
   if(!msg||!pedidoAtivoId||!CONFIGURADO) return;
   input.value='';
   db.ref(`pdv/usuarios/${lojaAtual.key}/chat_cliente/${pedidoAtivoId}`).push({
-    autor:'cliente', mensagem:msg, criado_em:new Date().toISOString()
+    autor:'cliente', mensagem:msg, criado_em:tsLocal()
   }).catch(()=>toast('Erro ao enviar'));
 }
 
