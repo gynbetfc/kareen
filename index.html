@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>SMART FOOD — Peça da sua loja favorita</title>
+<title>SMART DELIVERY — Peça da sua loja favorita</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -226,7 +226,7 @@ img{display:block;max-width:100%}
 <!-- ============ TELA: LISTA DE LOJAS ============ -->
 <div id="viewLojas">
   <div class="topbar">
-    <div class="brand"><span class="fire">🔥</span> SMART <b>FOOD</b></div>
+    <div class="brand"><span class="fire">🔥</span> SMART <b>DELIVERY</b></div>
   </div>
 
   <div class="hero">
@@ -319,7 +319,18 @@ img{display:block;max-width:100%}
 
       <div class="co-section" id="coEnderecoBox">
         <div class="co-label">Endereço de entrega</div>
-        <input class="co-input" id="coEndereco" type="text" placeholder="Rua, número, bairro, cidade" oninput="freteSujo=true">
+        <input class="co-input" id="coCep" type="text" placeholder="CEP (ajuda a localizar)" inputmode="numeric" oninput="freteSujo=true;buscarCep(this.value)" style="margin-bottom:8px">
+        <input class="co-input" id="coRua" type="text" placeholder="Rua / Avenida" oninput="freteSujo=true" style="margin-bottom:8px">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input class="co-input" id="coNumero" type="text" placeholder="Número" inputmode="numeric" oninput="freteSujo=true" style="flex:1">
+          <input class="co-input" id="coBairro" type="text" placeholder="Bairro" oninput="freteSujo=true" style="flex:2">
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input class="co-input" id="coQuadra" type="text" placeholder="Quadra (opc.)" style="flex:1">
+          <input class="co-input" id="coLote" type="text" placeholder="Lote (opc.)" style="flex:1">
+        </div>
+        <input class="co-input" id="coCidade" type="text" placeholder="Cidade" oninput="freteSujo=true" style="margin-bottom:8px">
+        <input class="co-input" id="coComplemento" type="text" placeholder="Complemento / ponto de referência (opc.)" style="margin-bottom:8px">
         <button class="co-frete-btn" id="btnCalcFrete" onclick="calcularFrete()">Calcular frete</button>
         <div id="coFreteInfo" class="co-frete-info hidden"></div>
       </div>
@@ -362,6 +373,23 @@ img{display:block;max-width:100%}
       <button onclick="fecharPedido()" class="x">✕</button>
     </div>
     <div class="ped-body" id="pedBody"></div>
+  </div>
+</div>
+
+<!-- ============ MODAL: CHAT ============ -->
+<div id="modalChat" class="modal hidden">
+  <div class="modal-bg" onclick="fecharChat()"></div>
+  <div class="sheet" style="max-height:80vh">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <h2>💬 Chat com a loja</h2>
+      <button onclick="fecharChat()" class="x">✕</button>
+    </div>
+    <div id="chatMsgs" style="flex:1;overflow-y:auto;padding:14px 20px;display:flex;flex-direction:column;gap:8px;min-height:200px"></div>
+    <div class="cart-foot" style="display:flex;gap:8px">
+      <input id="chatInputCli" type="text" placeholder="Digite sua mensagem..." class="co-input" style="flex:1" onkeydown="if(event.key==='Enter')enviarChatCli()">
+      <button class="btn-primary" style="width:auto;padding:0 22px" onclick="enviarChatCli()">➤</button>
+    </div>
   </div>
 </div>
 
@@ -749,17 +777,58 @@ function atualizarTipoUI(){
   if(tipoEntrega!=='entrega'){ freteAtual=0; }
 }
 
+function montarEndereco(){
+  const rua=(document.getElementById('coRua').value||'').trim();
+  const num=(document.getElementById('coNumero').value||'').trim();
+  const bairro=(document.getElementById('coBairro').value||'').trim();
+  const cidade=(document.getElementById('coCidade').value||'').trim();
+  const cep=(document.getElementById('coCep').value||'').trim();
+  let partes=[];
+  if(rua) partes.push(rua + (num?', '+num:''));
+  if(bairro) partes.push(bairro);
+  if(cidade) partes.push(cidade);
+  if(cep) partes.push(cep);
+  return partes.join(', ');
+}
+
+function montarEnderecoCompleto(){
+  // versão com quadra/lote/complemento, para exibir no cupom da loja
+  const base=montarEndereco();
+  const q=(document.getElementById('coQuadra').value||'').trim();
+  const l=(document.getElementById('coLote').value||'').trim();
+  const comp=(document.getElementById('coComplemento').value||'').trim();
+  let extra=[];
+  if(q) extra.push('Qd '+q);
+  if(l) extra.push('Lt '+l);
+  if(comp) extra.push(comp);
+  return base + (extra.length?' ('+extra.join(', ')+')':'');
+}
+
+async function buscarCep(cep){
+  const limpo=(cep||'').replace(/\D/g,'');
+  if(limpo.length!==8) return;
+  try{
+    const r=await fetch(`https://viacep.com.br/ws/${limpo}/json/`);
+    const d=await r.json();
+    if(d && !d.erro){
+      if(d.logradouro && !document.getElementById('coRua').value) document.getElementById('coRua').value=d.logradouro;
+      if(d.bairro && !document.getElementById('coBairro').value) document.getElementById('coBairro').value=d.bairro;
+      if(d.localidade) document.getElementById('coCidade').value=d.localidade + (d.uf?'/'+d.uf:'');
+      freteSujo=true;
+    }
+  }catch(e){}
+}
+
 async function calcularFrete(){
-  const end = document.getElementById('coEndereco').value.trim();
+  const end = montarEndereco();
   const info = document.getElementById('coFreteInfo');
-  if(end.length<6){ info.className='co-frete-info erro';info.classList.remove('hidden');info.textContent='Digite um endereço completo.';return; }
+  if(end.length<6){ info.className='co-frete-info erro';info.classList.remove('hidden');info.textContent='Preencha ao menos rua, número e cidade.';return; }
   if(!lojaAtual.coord){ info.className='co-frete-info erro';info.classList.remove('hidden');info.textContent='A loja ainda não configurou a localização. Escolha retirada ou fale com a loja.';return; }
   info.className='co-frete-info';info.classList.remove('hidden');info.innerHTML='<span class="pix-spin" style="display:inline-block"></span> Calculando frete...';
 
-  // Geocodifica o endereço do cliente direto na OpenRouteService (chave pública de geocoding)
   try{
     const geo = await geocodeCliente(end);
-    if(!geo){ info.className='co-frete-info erro';info.textContent='Não consegui localizar seu endereço. Tente detalhar mais (rua, número, bairro, cidade).';return; }
+    if(!geo){ info.className='co-frete-info erro';info.textContent='Não consegui localizar seu endereço. Confira o CEP e o número.';return; }
     coordCliente = geo;
     const km = await distanciaRua(lojaAtual.coord, geo);
     if(km===null){ info.className='co-frete-info erro';info.textContent='Não consegui calcular a rota. Verifique o endereço.';return; }
@@ -820,8 +889,9 @@ async function confirmarPedido(){
   if(!nome){ toast('Informe seu nome'); return; }
   if(!tel){ toast('Informe seu telefone'); return; }
   if(tipoEntrega==='entrega'){
-    const end = document.getElementById('coEndereco').value.trim();
-    if(end.length<6){ toast('Informe o endereço de entrega'); return; }
+    const end = montarEndereco();
+    if(end.length<6){ toast('Preencha o endereço de entrega'); return; }
+    if(!document.getElementById('coNumero').value.trim()){ toast('Informe o número'); return; }
     if(ORS_KEY_SITE && freteSujo){ toast('Calcule o frete antes de continuar'); return; }
     if(freteAtual===-1){ toast('Endereço fora da área de entrega'); return; }
   }
@@ -838,7 +908,7 @@ async function confirmarPedido(){
     tipo: tipoEntrega,
     cliente: {
       nome, telefone: tel,
-      endereco: tipoEntrega==='entrega'?document.getElementById('coEndereco').value.trim():'',
+      endereco: tipoEntrega==='entrega'?montarEnderecoCompleto():'',
       lat: coordCliente?coordCliente.lat:null,
       lng: coordCliente?coordCliente.lng:null
     },
@@ -856,6 +926,12 @@ async function confirmarPedido(){
     document.getElementById('btnConfirmar').disabled=true;
     await db.ref(`pdv/usuarios/${lojaAtual.key}/pedidos_online/${pedidoId}`).set(pedido);
     pedidoAtivoId = pedidoId;
+    // Salva o pedido ativo para reabrir o acompanhamento mesmo se fechar a janela
+    try{
+      localStorage.setItem('sd_pedido_ativo', JSON.stringify({
+        id: pedidoId, lojaKey: lojaAtual.key, lojaNome: lojaAtual.nome, criado: Date.now()
+      }));
+    }catch(e){}
     fecharCheckout();
     abrirAcompanhamento(pedidoId, pedido);
     escutarPedido(pedidoId);
@@ -879,6 +955,31 @@ function fecharPedido(){
   carrinho.length=0; atualizarBarraCarrinho();
 }
 
+// Retoma um pedido em andamento salvo (chamado ao abrir o site)
+function retomarPedidoSalvo(){
+  let salvo=null;
+  try{ salvo = JSON.parse(localStorage.getItem('sd_pedido_ativo')||'null'); }catch(e){}
+  if(!salvo || !salvo.id || !salvo.lojaKey) return;
+  // Pedidos com mais de 12h são descartados
+  if(salvo.criado && (Date.now()-salvo.criado) > 12*3600*1000){
+    localStorage.removeItem('sd_pedido_ativo'); return;
+  }
+  if(!CONFIGURADO) return;
+  // Busca o pedido no Firebase e reabre o acompanhamento
+  db.ref(`pdv/usuarios/${salvo.lojaKey}/pedidos_online/${salvo.id}`).once('value').then(snap=>{
+    const p = snap.val();
+    if(!p){ localStorage.removeItem('sd_pedido_ativo'); return; }
+    // se já finalizou/cancelou, não precisa reabrir
+    if(p.status==='finalizado' || p.status==='cancelado'){ localStorage.removeItem('sd_pedido_ativo'); return; }
+    pedidoAtivoId = salvo.id;
+    lojaAtual = lojaAtual || {key:salvo.lojaKey, nome:salvo.lojaNome};
+    abrirAcompanhamento(salvo.id, p);
+    // religa o listener em tempo real
+    pedidoRef = db.ref(`pdv/usuarios/${salvo.lojaKey}/pedidos_online/${salvo.id}`);
+    pedidoRef.on('value', s=>{ const pp=s.val(); if(pp) renderAcompanhamento(pp); });
+  }).catch(()=>{});
+}
+
 function abrirAcompanhamento(id, pedido){
   document.getElementById('modalPedido').classList.remove('hidden');
   renderAcompanhamento(pedido);
@@ -889,7 +990,13 @@ function escutarPedido(id){
   pedidoRef = db.ref(`pdv/usuarios/${lojaAtual.key}/pedidos_online/${id}`);
   pedidoRef.on('value', snap=>{
     const p = snap.val();
-    if(p) renderAcompanhamento(p, false);
+    if(p){
+      renderAcompanhamento(p);
+      // Limpa o pedido salvo quando finaliza ou cancela
+      if(p.status==='finalizado' || p.status==='cancelado'){
+        try{ localStorage.removeItem('sd_pedido_ativo'); }catch(e){}
+      }
+    }
   });
 }
 
@@ -974,13 +1081,64 @@ function copiarPix(){
   toast('Código PIX copiado ✅');
 }
 
+let chatRefLoja=null, chatRefCli=null, chatMensagensCache=[];
+
 function abrirChatCliente(){
-  const msg = prompt('💬 Mensagem para a loja:');
-  if(!msg||!msg.trim()) return;
+  if(!pedidoAtivoId){ toast('Nenhum pedido ativo'); return; }
   if(!CONFIGURADO){ toast('Sem conexão'); return; }
+  document.getElementById('modalChat').classList.remove('hidden');
+  chatMensagensCache=[];
+  const lojaKey = (lojaAtual&&lojaAtual.key);
+  // Escuta as mensagens da LOJA
+  chatRefLoja = db.ref(`pdv/usuarios/${lojaKey}/chat_pedidos/${pedidoAtivoId}`);
+  chatRefLoja.on('value', s=>{ mesclarChat(s.val(), 'loja'); });
+  // Escuta as mensagens do CLIENTE (as próprias)
+  chatRefCli = db.ref(`pdv/usuarios/${lojaKey}/chat_cliente/${pedidoAtivoId}`);
+  chatRefCli.on('value', s=>{ mesclarChat(s.val(), 'cliente'); });
+}
+
+function mesclarChat(dados, origem){
+  // remove as desse origem e readiciona
+  chatMensagensCache = chatMensagensCache.filter(m=>m._origem!==origem);
+  if(dados){
+    Object.values(dados).forEach(m=>{
+      chatMensagensCache.push({autor:m.autor||origem, mensagem:m.mensagem||'', criado_em:m.criado_em||'', _origem:origem});
+    });
+  }
+  chatMensagensCache.sort((a,b)=>(a.criado_em||'').localeCompare(b.criado_em||''));
+  renderChat();
+}
+
+function renderChat(){
+  const cont=document.getElementById('chatMsgs');
+  if(!chatMensagensCache.length){
+    cont.innerHTML='<p style="text-align:center;color:var(--text-mut);font-size:13px;padding:30px">Nenhuma mensagem ainda.<br>Envie uma mensagem para a loja 👋</p>';
+    return;
+  }
+  cont.innerHTML=chatMensagensCache.map(m=>{
+    const euCliente=m.autor==='cliente';
+    return `<div style="align-self:${euCliente?'flex-end':'flex-start'};max-width:78%">
+      <div style="background:${euCliente?'var(--brasa)':'var(--card-hi)'};color:#fff;padding:9px 13px;border-radius:13px;font-size:14px">${m.mensagem}</div>
+      <div style="font-size:10px;color:var(--text-mut);margin-top:2px;text-align:${euCliente?'right':'left'}">${euCliente?'Você':'Loja'}</div>
+    </div>`;
+  }).join('');
+  cont.scrollTop=cont.scrollHeight;
+}
+
+function enviarChatCli(){
+  const input=document.getElementById('chatInputCli');
+  const msg=input.value.trim();
+  if(!msg||!pedidoAtivoId||!CONFIGURADO) return;
+  input.value='';
   db.ref(`pdv/usuarios/${lojaAtual.key}/chat_cliente/${pedidoAtivoId}`).push({
-    autor:'cliente', mensagem:msg.trim(), criado_em:new Date().toISOString()
-  }).then(()=>toast('Mensagem enviada ✅')).catch(()=>toast('Erro ao enviar'));
+    autor:'cliente', mensagem:msg, criado_em:new Date().toISOString()
+  }).catch(()=>toast('Erro ao enviar'));
+}
+
+function fecharChat(){
+  document.getElementById('modalChat').classList.add('hidden');
+  if(chatRefLoja){ chatRefLoja.off(); chatRefLoja=null; }
+  if(chatRefCli){ chatRefCli.off(); chatRefCli=null; }
 }
 
 function toast(msg){
@@ -992,7 +1150,13 @@ function toast(msg){
 function irPara(tela){
   document.querySelectorAll('.tabbar button').forEach(b=>b.classList.remove('on'));
   if(event&&event.currentTarget) event.currentTarget.classList.add('on');
-  if(tela==='pedido'){ if(carrinho.length) abrirCarrinho(); else toast('Seu carrinho está vazio'); }
+  if(tela==='pedido'){
+    // Se há um pedido em andamento salvo, reabre o acompanhamento
+    let salvo=null; try{ salvo=JSON.parse(localStorage.getItem('sd_pedido_ativo')||'null'); }catch(e){}
+    if(salvo && salvo.id){ retomarPedidoSalvo(); }
+    else if(carrinho.length){ abrirCarrinho(); }
+    else { toast('Você não tem pedidos em andamento'); }
+  }
   if(tela==='lojas'){ voltarParaLojas(); }
 }
 
@@ -1000,6 +1164,8 @@ function irPara(tela){
    INÍCIO
    ============================================================ */
 carregarLojas();
+// Retoma um pedido em andamento (se houver) alguns segundos após conectar
+setTimeout(retomarPedidoSalvo, 1500);
 </script>
 </body>
 </html>
